@@ -3,7 +3,7 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 import datetime
-from config import MODELS, SCRIPT_DIR, POST_DIR
+from config import MODELS, SCRIPT_DIR, POST_DIR, SPEAKERS
 from utils import get_latest_file
 
 
@@ -19,7 +19,7 @@ def create_podcast_script(
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     # Create the system prompt
-    system_prompt = """You are a podcast script writer. Create a natural conversation between two speakers.
+    system_prompt = """You are a podcast script writer. Create a natural and engaging conversation between two seasoned podcast hosts.
     
     **Format the output in the following way.**
     <Speaker 1> [Content of speaker 1's line]
@@ -38,15 +38,19 @@ def create_podcast_script(
     Use natural fillers like 'mm-hmm' sparingly to simulate authentic interaction during pauses or when someone else is speaking.
     Includes also very short back in forth. Incorporate personal anecdotes to make the content relatable. Add active listening cues such as 'I see' or 'Right' to show engagement in conversation including follow up questions.
     
+    **Section styles:**
     Introduction style: {intro_style}
     Main content style: {content_style}
     Outro style: {outro_style}
 
+    ** Content to discuss:**
     Main content to discuss: {main_content}
 
-    Speaker 1 is called Tim
-    Speaker 2 is called Elly
+    **Speaker names:**
+    Speaker 1 is called {SPEAKERS[1]["name"]}
+    Speaker 2 is called {SPEAKERS[2]["name"]}
 
+    **Remark:**
     Make sure the transitions between sections feel natural and maintain engaging dialogue throughout. The main content should be the most important part and should be the longest part of the script."""
 
     # Generate the script
@@ -87,18 +91,13 @@ def main():
             line for line in content_lines if line.startswith("**")
         )
     else:
-        main_content = "No recent posts found in the post directory."
-
-    # You can customize these styles
-    intro_style = "energetic and humorous, with friendly banter between hosts"
-    content_style = "informative and professional, but keeping it accessible"
-    outro_style = "casual and forward-looking, encouraging listener engagement"
+        raise ValueError("No recent posts found in the post directory.")
 
     filepath = create_podcast_script(
         main_content=main_content,
-        intro_style=intro_style,
-        content_style=content_style,
-        outro_style=outro_style,
+        intro_style=MODELS["podcast_script"]["intro_style"],
+        content_style=MODELS["podcast_script"]["content_style"],
+        outro_style=MODELS["podcast_script"]["outro_style"],
     )
 
     print(f"Podcast script has been saved to: {filepath}")
