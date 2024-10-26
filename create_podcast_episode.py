@@ -21,7 +21,7 @@ def create_podcast_episode(audio_files=None, output_file=None):
 
         # Prepare outro music
         outro_music = AudioSegment.from_mp3(music_path)
-        outro_music = outro_music[:15000]  # First 15 seconds
+        outro_music = outro_music[-15000:]  # last 15 seconds
         outro_music = add_audio_effects(outro_music, fade_duration_ms=5000)
         outro_music = outro_music - 15  # Reduce volume by 15 dB
     else:
