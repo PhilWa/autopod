@@ -20,11 +20,13 @@ def create_podcast_script(
 
     # Create the system prompt
     system_prompt = """You are a podcast script writer. Create a natural conversation between two speakers.
-    Format the output with speaker indicators like:
-    <Speaker 1> [Speaker 1's line]
-    <Speaker 2> [Speaker 2's line]
     
-    The script should have three parts:
+    **Format the output in the following way.**
+    <Speaker 1> [Content of speaker 1's line]
+    <Speaker 2> [Content of speaker 2's line]
+    Remark: It is essential that <Speaker 1> and <Speaker 2> are used exactly as shown above.
+    
+    **The script should have three parts:**
     1. An introduction
     2. Main content discussion
     3. An outro
@@ -34,7 +36,7 @@ def create_podcast_script(
     # Create the user prompt
     user_prompt = f"""Create a podcast script with the following specifications:
     Use natural fillers like 'mm-hmm' sparingly to simulate authentic interaction during pauses or when someone else is speaking.
-    Incorporate personal anecdotes to make the content relatable. Add active listening cues such as 'I see' or 'Right' to show engagement in conversation including follow up questions.
+    Includes also very short back in forth. Incorporate personal anecdotes to make the content relatable. Add active listening cues such as 'I see' or 'Right' to show engagement in conversation including follow up questions.
     
     Introduction style: {intro_style}
     Main content style: {content_style}
