@@ -55,7 +55,6 @@ def generate_audio(
     history_text = " ".join(
         [f"{msg['role']}: {msg['content']}" for msg in recent_history]
     )
-    print(f"Recent history: {history_text[:200]}...")  # Show first 200 chars
 
     try:
         completion = client.chat.completions.create(
@@ -91,8 +90,7 @@ def main(script_path=None, output_prefix=None, run_id=None):
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     print("\n=== Starting Script Processing ===")
-
-    # Read the podcast script
+    # Step 1: Process the script
     if script_path:
         print(f"Using provided script path: {script_path}")
         script_path = os.path.join(SCRIPT_DIR, script_path)
@@ -101,13 +99,8 @@ def main(script_path=None, output_prefix=None, run_id=None):
         print("No script path provided, using latest script")
         script_path, content = get_latest_file(SCRIPT_DIR, ".txt")
 
-    print(f"Reading script from: {script_path}")
-    print(f"Script content: {content[:100]}...")
-
     # Parse the script
     parsed_lines = parse_script(content)
-    print(f"Found {len(parsed_lines)} lines to process")
-    print(f"Parsed lines: {parsed_lines[:5]}")
 
     # Get speaker definitions
     print("\nSpeaker Definitions:")
@@ -120,7 +113,7 @@ def main(script_path=None, output_prefix=None, run_id=None):
     # Use run_id for timestamp if provided
     timestamp = run_id or datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Generate audio for each line
+    # Step 2: Generate audio for each line
     audio_files = []
     for i, line in enumerate(parsed_lines):
         print(f"\nProcessing line {i+1} of {len(parsed_lines)}")
@@ -155,6 +148,5 @@ def main(script_path=None, output_prefix=None, run_id=None):
 
 if __name__ == "__main__":
     audio_files = main()
-    print("\nAll audio files generated:")
     for file in audio_files:
         print(file)

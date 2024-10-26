@@ -6,7 +6,13 @@ from create_linkedin_post import create_linkedin_post, get_latest_articles
 from create_podcast_script import create_podcast_script
 from create_podcast_audio import main as create_audio
 from create_podcast_episode import create_podcast_episode
-from config import DATA_DIR, AUDIO_DIR, SCRIPT_DIR, POST_DIR
+from config import (
+    DATA_DIR,
+    AUDIO_DIR,
+    SCRIPT_DIR,
+    POST_DIR,
+    PODCAST_STYLES,
+)
 
 
 def ensure_directories():
@@ -40,13 +46,13 @@ def run_pipeline():
             article_content, output_file=f"linkedin_post_{run_id}.txt"
         )
 
-        # Step 3: Create podcast script
+        # Step 3: Create podcast script using styles from config
         print(f"\n=== Creating Podcast Script ===")
         create_podcast_script(
             main_content=linkedin_post,
-            intro_style="energetic and engaging",
-            content_style="informative and professional",
-            outro_style="warm and inviting",
+            intro_style=PODCAST_STYLES["intro"],
+            content_style=PODCAST_STYLES["content"],
+            outro_style=PODCAST_STYLES["outro"],
             output_file=f"podcast_script_{run_id}.txt",
         )
 
