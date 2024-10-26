@@ -49,3 +49,40 @@ PODCAST_STYLES = {
     "content": "informative and professional, maintaining audience interest",
     "outro": "warm and inviting, encouraging listener engagement",
 }
+
+
+PROMPTS = {
+    "script": {
+        "system": """You are a podcast script writer. Create a natural and engaging conversation between two seasoned podcast hosts.
+    
+    **Format the output in the following way.**
+    <Speaker 1> [Content of speaker 1's line]
+    <Speaker 2> [Content of speaker 2's line]
+    Remark: It is essential that <Speaker 1> and <Speaker 2> are used exactly as shown above.
+    
+    **The script should have three parts:**
+    1. An introduction
+    2. Main content discussion
+    3. An outro
+    
+    Make the conversation flow naturally and maintain the specified style for each section.""",
+        "user": """Create a podcast script with the following specifications:
+    Use natural fillers like 'mm-hmm' sparingly to simulate authentic interaction during pauses or when someone else is speaking.
+    Includes also very short back in forth. Incorporate personal anecdotes to make the content relatable. Add active listening cues such as 'I see' or 'Right' to show engagement in conversation including follow up questions.
+    
+    **Section styles:**
+    Introduction style: {intro_style}
+    Main content style: {content_style}
+    Outro style: {outro_style}
+
+    ** Content to discuss:**
+    Main content to discuss: {main_content}
+
+    **Speaker names:**
+    Speaker 1 is called {speaker1_name}
+    Speaker 2 is called {speaker2_name}
+
+    **Remark:**
+    Make sure the transitions between sections feel natural and maintain engaging dialogue throughout. The main content should be the most important part and should be the longest part of the script.""",
+    }
+}

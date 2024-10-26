@@ -3,7 +3,7 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 import datetime
-from config import MODELS, SCRIPT_DIR, POST_DIR, SPEAKERS
+from config import MODELS, SCRIPT_DIR, POST_DIR, SPEAKERS, PROMPTS, PODCAST_STYLES
 from utils import get_latest_file
 
 
@@ -18,40 +18,18 @@ def create_podcast_script(
     load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+    # Format the user prompt with dynamic content
+    user_prompt = PROMPTS["script"]["user"].format(
+        intro_style=intro_style,
+        content_style=content_style,
+        outro_style=outro_style,
+        main_content=main_content,
+        speaker1_name=SPEAKERS[1]["name"],
+        speaker2_name=SPEAKERS[2]["name"],
+    )
+    system_prompt = PROMPTS["script"]["system"]
+
     # Create the system prompt
-    system_prompt = """You are a podcast script writer. Create a natural and engaging conversation between two seasoned podcast hosts.
-    
-    **Format the output in the following way.**
-    <Speaker 1> [Content of speaker 1's line]
-    <Speaker 2> [Content of speaker 2's line]
-    Remark: It is essential that <Speaker 1> and <Speaker 2> are used exactly as shown above.
-    
-    **The script should have three parts:**
-    1. An introduction
-    2. Main content discussion
-    3. An outro
-    
-    Make the conversation flow naturally and maintain the specified style for each section."""
-
-    # Create the user prompt
-    user_prompt = f"""Create a podcast script with the following specifications:
-    Use natural fillers like 'mm-hmm' sparingly to simulate authentic interaction during pauses or when someone else is speaking.
-    Includes also very short back in forth. Incorporate personal anecdotes to make the content relatable. Add active listening cues such as 'I see' or 'Right' to show engagement in conversation including follow up questions.
-    
-    **Section styles:**
-    Introduction style: {intro_style}
-    Main content style: {content_style}
-    Outro style: {outro_style}
-
-    ** Content to discuss:**
-    Main content to discuss: {main_content}
-
-    **Speaker names:**
-    Speaker 1 is called {SPEAKERS[1]["name"]}
-    Speaker 2 is called {SPEAKERS[2]["name"]}
-
-    **Remark:**
-    Make sure the transitions between sections feel natural and maintain engaging dialogue throughout. The main content should be the most important part and should be the longest part of the script."""
 
     # Generate the script
     response = client.chat.completions.create(
