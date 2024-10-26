@@ -5,9 +5,10 @@ DATA_DIR = os.path.join("data")
 AUDIO_DIR = os.path.join(DATA_DIR, "audio")
 POST_DIR = os.path.join(DATA_DIR, "posts")
 SCRIPT_DIR = os.path.join(DATA_DIR, "scripts")
+EPISODE_DIR = os.path.join(DATA_DIR, "episodes")
 
 # Create all directories
-for dir_path in [DATA_DIR, AUDIO_DIR, POST_DIR, SCRIPT_DIR]:
+for dir_path in [DATA_DIR, AUDIO_DIR, POST_DIR, SCRIPT_DIR, EPISODE_DIR]:
     os.makedirs(dir_path, exist_ok=True)
 
 # Model Configuration
