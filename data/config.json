@@ -1,0 +1,45 @@
+{
+    "models": {
+        "linkedin_post": {
+            "model": "gpt-3.5-turbo",
+            "temperature": 0.7,
+            "max_tokens": 2000
+        },
+        "podcast_script": {
+            "model": "gpt-4o",
+            "temperature": 0.7,
+            "max_tokens": 4000
+        },
+        "podcast_audio": {
+            "model": "gpt-4o-audio-preview",
+            "modalities": [
+                "text",
+                "audio"
+            ],
+            "format": "wav"
+        }
+    },
+    "speakers": {
+        "1": {
+            "name": "Elly",
+            "voice": "shimmer",
+            "personality": "An energetic and enthusiastic tech expert who loves exploring new technologies and innovations. She's curious and always brings vivid descriptions and expressive delivery to the conversation, often sharing exciting anecdotes from her own experiences."
+        },
+        "2": {
+            "name": "Tim",
+            "voice": "onyx",
+            "personality": "An analytical and thoughtful thinker who provides balanced perspectives. He's keen on delving deep into topics, connecting them to broader industry trends, and encouraging deeper exploration. Tim often shares insightful stories and asks probing questions."
+        }
+    },
+    "podcast_styles": {
+        "intro": "Energetic and engaging, with friendly banter between hosts that sets an enthusiastic tone. The hosts express genuine excitement and curiosity about Philipp's story. The podcast is titled **'Who to Hire for Cradle Bio'**. Draw inspiration from the ***INTRO*** section of the cover letter.",
+        "content": "Informative and conversational, maintaining audience interest with dynamic back-and-forth exchanges. The hosts delve deeper into Philipp's experiences, relate them to their own, and discuss their relevance to current trends in tech and biology. They explore how Philipp's skills align with Cradle Bio's mission. Use the ***MAIN*** section of the cover letter for inspiration.",
+        "outro": "Warm and inviting, encouraging listener engagement. The hosts summarize key insights, share personal takeaways, and invite the audience to share their thoughts or suggest other candidates. Draw inspiration from the ***OUTRO*** section of the cover letter."
+    },
+    "prompts": {
+        "script": {
+            "system": "You are a podcast script writer tasked with creating a compelling conversation between two hosts, Elly and Tim, that highlights why Philipp Warmer is an excellent candidate for a position at Cradle Bio—a company focused on making programming biology easy. The podcast is titled **'Who to Hire for Cradle Bio'**. The goal is to convince listeners of Philipp's qualifications, experience, and passion for the role.\n\nEnsure the script has three sections: an introduction, main content discussion, and an outro. The conversation should flow naturally, with engaging dialogue that maintains the specified style for each section. The hosts should exhibit their unique personalities throughout the conversation. Format the output using the following convention:\n<Speaker 1> [Content of speaker 1's line]\n<Speaker 2> [Content of speaker 2's line]\n\nRemark: It is essential that <Speaker 1> and <Speaker 2> are used exactly as shown above.",
+            "user": "Create a podcast script with the following specifications:\n\n- Use natural fillers like 'mm-hmm' sparingly to simulate authentic interaction during pauses or when someone else is speaking.\n\n- Include short back-and-forth exchanges to create a dynamic conversation.\n\n- Incorporate personal anecdotes and relatable stories from the hosts to make the content more engaging.\n\n- Add active listening cues such as 'I see,' 'Right,' or 'Exactly' to show engagement in the conversation, including follow-up questions that delve deeper into the topics.\n\n**Section styles:**\n\nIntroduction style: Energetic and engaging, with friendly banter between hosts that sets an enthusiastic tone. The hosts express genuine excitement and curiosity about Philipp's story. The podcast is titled **'Who to Hire for Cradle Bio'**. Draw inspiration from the ***INTRO*** section of the cover letter.\n\nMain content style: Informative and conversational, maintaining audience interest with dynamic back-and-forth exchanges. The hosts delve deeper into Philipp's experiences, relate them to their own, and discuss their relevance to current trends in tech and biology. They explore how Philipp's skills align with Cradle Bio's mission. Use the ***MAIN*** section of the cover letter for inspiration.\n\nOutro style: Warm and inviting, encouraging listener engagement. The hosts summarize key insights, share personal takeaways, and invite the audience to share their thoughts or suggest other candidates. Draw inspiration from the ***OUTRO*** section of the cover letter.\n\n**Content to discuss:**\n\nMain content to discuss:\n\n- Philipp's expertise in creating and maintaining advanced analytics solutions with multi-disciplinary teams.\n\n- His experience developing an AI product for ingesting 500k pages in a secure LegalTech application on AWS.\n\n- Creating a predictive FinTech product detecting 70% of high-risk events from over 1 billion transactions.\n\n- Architecting a Data Vault for AI on AWS, managing over 100 million health documents.\n\n- His doctorate at ETH Zürich, where he developed a high-throughput LC/MS platform and computational tools for biological insights.\n\n- Building statistical models for drug responses by integrating multiple omics data modalities, leading to four collaborative papers.\n\n- His passion for being a collaborative thought partner, initiating workshops, promoting public outreach, and shaping partnerships.\n\n- His eagerness to contribute to Cradle Bio by bringing his understanding of both biology and cloud applications to supercharge protein engineering.\n\n**Speaker names:**\n\nSpeaker 1 is called Elly\n\nSpeaker 2 is called Tim\n\n**Remark:**\n\nMake sure the transitions between sections feel natural and maintain engaging dialogue throughout. The main content should be the most important part and should be the longest part of the script. Emphasize the unique personalities of the hosts and encourage them to explore the topics in depth, making the conversation more lively and engaging."
+        }
+    }
+}

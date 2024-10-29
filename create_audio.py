@@ -39,8 +39,11 @@ def parse_script(content):
 
 
 def generate_audio(
-    client, text, speaker_history, speaker_info, voice, file_prefix, index
+    client, text, speaker_history, speaker_info, voice, file_prefix, index, models=None
 ):
+    # Use provided models config or fall back to default
+    models = models or MODELS
+
     # Print debugging information
     print(f"\n=== Generating Audio for Part {index} ===")
     print(f"Speaker: {speaker_info['name']}")
@@ -58,9 +61,9 @@ def generate_audio(
 
     try:
         completion = client.chat.completions.create(
-            model=MODELS["podcast_audio"]["model"],
-            modalities=MODELS["podcast_audio"]["modalities"],
-            audio={"voice": voice, "format": MODELS["podcast_audio"]["format"]},
+            model=models["podcast_audio"]["model"],
+            modalities=models["podcast_audio"]["modalities"],
+            audio={"voice": voice, "format": models["podcast_audio"]["format"]},
             messages=[
                 {
                     "role": "system",
@@ -85,9 +88,13 @@ def generate_audio(
         raise
 
 
-def main(script_path=None, output_prefix=None, run_id=None):
+def main(script_path=None, output_prefix=None, run_id=None, models=None, speakers=None):
     load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    # Use provided config or fall back to default
+    models = models or MODELS
+    speakers = speakers or SPEAKERS
 
     print("\n=== Starting Script Processing ===")
     # Step 1: Process the script
@@ -102,11 +109,6 @@ def main(script_path=None, output_prefix=None, run_id=None):
     # Parse the script
     parsed_lines = parse_script(content)
 
-    # Get speaker definitions
-    print("\nSpeaker Definitions:")
-    for speaker_num, info in SPEAKERS.items():
-        print(f"Speaker {speaker_num}: {info['name']} (Voice: {info['voice']})")
-
     # Keep track of conversation history
     speaker_history = deque(maxlen=5)
 
@@ -118,7 +120,7 @@ def main(script_path=None, output_prefix=None, run_id=None):
     for i, line in enumerate(parsed_lines):
         print(f"\nProcessing line {i+1} of {len(parsed_lines)}")
         speaker_num = line["speaker"]
-        voice = SPEAKERS[speaker_num]["voice"]
+        voice = speakers[speaker_num]["voice"]
 
         try:
             # Use output_prefix if provided, otherwise use timestamp
@@ -127,10 +129,11 @@ def main(script_path=None, output_prefix=None, run_id=None):
                 client,
                 line["text"],
                 list(speaker_history),
-                SPEAKERS[speaker_num],
+                speakers[speaker_num],
                 voice,
                 file_prefix,
                 i,
+                models=models,
             )
 
             speaker_history.append(

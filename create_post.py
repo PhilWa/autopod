@@ -42,8 +42,11 @@ def get_latest_articles():
     return articles
 
 
-def create_linkedin_post(articles, output_file=None):
+def create_linkedin_post(articles, output_file=None, models=None):
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    # Use provided models config or fall back to default
+    models = models or MODELS
 
     # Prepare the articles for the prompt
     articles_text = "\n\n".join(
@@ -77,9 +80,9 @@ def create_linkedin_post(articles, output_file=None):
     """
 
     response = client.chat.completions.create(
-        model=MODELS["linkedin_post"]["model"],
-        temperature=MODELS["linkedin_post"]["temperature"],
-        max_tokens=MODELS["linkedin_post"]["max_tokens"],
+        model=models["linkedin_post"]["model"],
+        temperature=models["linkedin_post"]["temperature"],
+        max_tokens=models["linkedin_post"]["max_tokens"],
         messages=[
             {
                 "role": "system",
