@@ -11,6 +11,7 @@ EPISODE_DIR = os.path.join(DATA_DIR, "episodes")
 for dir_path in [DATA_DIR, AUDIO_DIR, POST_DIR, SCRIPT_DIR, EPISODE_DIR]:
     os.makedirs(dir_path, exist_ok=True)
 
+
 # Model Configuration
 MODELS = {
     "linkedin_post": {

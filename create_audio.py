@@ -58,7 +58,9 @@ def generate_audio(
     history_text = " ".join(
         [f"{msg['role']}: {msg['content']}" for msg in recent_history]
     )
-
+    print(f"History text: {history_text}")
+    print(f"Text: {text}")
+    text = f"Say the following text in the appropriate voice given the previous conversation: {text}"
     try:
         completion = client.chat.completions.create(
             model=models["podcast_audio"]["model"],
@@ -98,6 +100,7 @@ def main(script_path=None, output_prefix=None, run_id=None, models=None, speaker
 
     print("\n=== Starting Script Processing ===")
     # Step 1: Process the script
+    script_path = "podcast_script_20241029_214055.txt"
     if script_path:
         print(f"Using provided script path: {script_path}")
         script_path = os.path.join(SCRIPT_DIR, script_path)
@@ -124,7 +127,8 @@ def main(script_path=None, output_prefix=None, run_id=None, models=None, speaker
 
         try:
             # Use output_prefix if provided, otherwise use timestamp
-            file_prefix = output_prefix or f"podcast_audio_{timestamp}"
+            file_prefix = output_prefix or f"audio_{timestamp}"
+            print(line["text"])
             audio_file = generate_audio(
                 client,
                 line["text"],
@@ -135,7 +139,6 @@ def main(script_path=None, output_prefix=None, run_id=None, models=None, speaker
                 i,
                 models=models,
             )
-
             speaker_history.append(
                 {"role": f"Speaker {line['speaker']}", "content": line["text"]}
             )

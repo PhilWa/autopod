@@ -17,12 +17,6 @@ import argparse
 import json
 
 
-def ensure_directories():
-    """Ensure all required directories exist"""
-    for dir_path in [DATA_DIR, AUDIO_DIR, SCRIPT_DIR, POST_DIR]:
-        os.makedirs(dir_path, exist_ok=True)
-
-
 def generate_run_id():
     """Generate a unique run ID based on timestamp"""
     return datetime.now().strftime("%Y%m%d_%H%M%S")
