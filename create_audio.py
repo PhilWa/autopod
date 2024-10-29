@@ -97,7 +97,7 @@ def main(script_path=None, output_prefix=None, run_id=None, models=None, speaker
     # Use provided config or fall back to default
     models = models or MODELS
     speakers = speakers or SPEAKERS
-
+    print(f"🔍 speakers: {speakers}")
     print("\n=== Starting Script Processing ===")
     # Step 1: Process the script
     script_path = "podcast_script_20241029_214055.txt"
@@ -122,10 +122,13 @@ def main(script_path=None, output_prefix=None, run_id=None, models=None, speaker
     audio_files = []
     for i, line in enumerate(parsed_lines):
         print(f"\nProcessing line {i+1} of {len(parsed_lines)}")
-        speaker_num = line["speaker"]
+        speaker_num = str(line["speaker"])
+        print(f"🔍 speaker_num: {speaker_num}")
+        # This line does not work.
         voice = speakers[speaker_num]["voice"]
-
+        print(f"🔍 voice: {voice}")
         try:
+            print(f"🔍 about to generate audio")
             # Use output_prefix if provided, otherwise use timestamp
             file_prefix = output_prefix or f"audio_{timestamp}"
             print(line["text"])
@@ -142,7 +145,7 @@ def main(script_path=None, output_prefix=None, run_id=None, models=None, speaker
             speaker_history.append(
                 {"role": f"Speaker {line['speaker']}", "content": line["text"]}
             )
-
+            1 / 0
             audio_files.append(audio_file)
 
         except Exception as e:

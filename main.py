@@ -124,7 +124,6 @@ def run_pipeline(input_text_file=None, config_path=None):
 
 def main():
     load_dotenv()
-    ensure_directories()
 
     parser = argparse.ArgumentParser(description="Run the content generation pipeline.")
     parser.add_argument(
