@@ -5,7 +5,13 @@ from get_information import get_recent_articles
 from create_post import create_linkedin_post, get_latest_articles
 from create_dialogue import create_podcast_script
 from create_audio import main as create_audio
-from create_episode import create_podcast_episode
+from create_episode import (
+    load_audio,
+    stitch_audio,
+    apply_postprocessing,
+    add_intro_outro,
+    save_audio,
+)
 import argparse
 import json
 
@@ -70,19 +76,23 @@ def run_pipeline(input_text_file=None, config_path=None):
 
         # Determine content source
         if input_text_file:
-            linkedin_post = process_text_file(input_text_file)
+            content = process_text_file(input_text_file)
+            print(f"\n=== Content: {content[:100]} ===")
         else:
-            linkedin_post, error = process_articles(run_id, models=MODELS)
+            content, error = process_articles(run_id, models=MODELS)
             if error:
                 return error
 
         # Step 2: Create podcast script
         create_podcast_script(
-            main_content=linkedin_post,
+            main_content=content,
             intro_style=PODCAST_STYLES["intro"],
             content_style=PODCAST_STYLES["content"],
             outro_style=PODCAST_STYLES["outro"],
             output_file=f"podcast_script_{run_id}.txt",
+            models=MODELS,
+            speakers=SPEAKERS,
+            prompts=PROMPTS,
         )
 
         # Step 3: Generate audio files
@@ -99,14 +109,29 @@ def run_pipeline(input_text_file=None, config_path=None):
 
         # Step 4: Create final podcast episode
         print(f"\n=== Creating Final Podcast Episode ===")
-        episode_path = create_podcast_episode(
-            audio_files=audio_files, output_file=f"episode_{run_id}.mp3"
+        segments = load_audio(run_id=run_id)
+        combined_audio = stitch_audio(segments)
+        processed_audio = apply_postprocessing(combined_audio)
+        final_audio = add_intro_outro(
+            processed_audio,
+            intro_path="helper/Ready for the Show.mp3",  # Update with your actual paths
+            outro_path="helper/Ready for the Show.mp3",
+            intro_start=1000,
+            intro_end=5000,
+            outro_start=2000,
+            outro_end=None,
+            fade_duration=2000,
         )
+        output_filename = f"episode_{run_id}.mp3"
+        save_audio(final_audio, output_filename, run_id=run_id)
+        episode_path = os.path.join(
+            "episodes", run_id, output_filename
+        )  # Adjust path as needed
 
         return {
             "status": "success",
             "run_id": run_id,
-            "linkedin_post": linkedin_post,
+            "curated_post": content,
             "audio_files": audio_files,
             "episode_path": episode_path,
         }

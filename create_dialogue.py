@@ -3,7 +3,7 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 import datetime
-from config import MODELS, SCRIPT_DIR, POST_DIR, SPEAKERS, PROMPTS, PODCAST_STYLES
+from config import MODELS, SCRIPT_DIR, POST_DIR, SPEAKERS, PROMPTS
 from utils import get_latest_file
 
 
@@ -13,33 +13,52 @@ def create_podcast_script(
     content_style="professional",
     outro_style="relaxed and engaging",
     output_file=None,
+    models=None,
+    speakers=None,
+    prompts=None,
 ):
     # Load environment variables
     load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+    # Use provided configs or fall back to default
+    if models is None or speakers is None or prompts is None:
+        from config import MODELS, SPEAKERS, PROMPTS
+
+        # If any parameter is None, use the default from config
+        if models is None:
+            models = MODELS
+        if speakers is None:
+            speakers = SPEAKERS
+        if prompts is None:
+            prompts = PROMPTS
+
+    print(f"\n=== Intro Style: {intro_style} ===")
+
     # Format the user prompt with dynamic content
-    user_prompt = PROMPTS["script"]["user"].format(
+    user_prompt = prompts["script"]["user"].format(
         intro_style=intro_style,
         content_style=content_style,
         outro_style=outro_style,
         main_content=main_content,
-        speaker1_name=SPEAKERS[1]["name"],
-        speaker2_name=SPEAKERS[2]["name"],
+        speaker1_name=speakers["1"]["name"],
+        speaker2_name=speakers["2"]["name"],
     )
-    system_prompt = PROMPTS["script"]["system"]
+    system_prompt = prompts["script"]["system"]
+    print(f"\n=== User Prompt: {user_prompt} ===")
 
     # Create the system prompt
 
     # Generate the script
+    print(f"\n=== System Prompt: {system_prompt} ===")
     response = client.chat.completions.create(
-        model=MODELS["podcast_script"]["model"],
+        model=models["podcast_script"]["model"],
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        temperature=MODELS["podcast_script"]["temperature"],
-        max_tokens=MODELS["podcast_script"]["max_tokens"],
+        temperature=models["podcast_script"]["temperature"],
+        max_tokens=models["podcast_script"]["max_tokens"],
     )
 
     # Get the generated script

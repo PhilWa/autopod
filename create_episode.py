@@ -5,7 +5,7 @@ import os
 from config import AUDIO_DIR, EPISODE_DIR
 
 
-def load_audio(run_id=None, file_type="mp3"):
+def load_audio(run_id=None, file_type="wav"):
     # List all files in AUDIO_DIR with the given run_id in their name
     audio_files = [
         f
@@ -17,7 +17,7 @@ def load_audio(run_id=None, file_type="mp3"):
     audio_files = sorted(
         audio_files, key=lambda x: os.path.getctime(os.path.join(AUDIO_DIR, x))
     )
-
+    print(f"🤖 loaded {len(audio_files)} audio files")
     # Load all sorted audio segments
     return [
         AudioSegment.from_file(os.path.join(AUDIO_DIR, file)) for file in audio_files
@@ -35,16 +35,23 @@ def stitch_audio(segments, pause_range=(500, 2000)):
     return combined
 
 
-def apply_postprocessing(audio, add_ambient=False, ambient_path=None):
+def apply_postprocessing(
+    audio,
+    add_compression=False,
+    add_normalization=False,
+    add_ambient=False,
+    ambient_path=None,
+):
     print("🔄 applying postprocessing")
     # Compress and normalize
-    audio = compress_dynamic_range(audio)
-    print("🔄 normalizing audio")
-    audio = normalize(audio)
+    if add_compression:
+        audio = compress_dynamic_range(audio)
+    if add_normalization:
+        audio = normalize(audio)
 
     # Optional: Add ambient sound for consistency in background tone
     if add_ambient:
-        print("🔄 adding ambient sound")
+        print("🔊 adding ambient sound")
         ambient = AudioSegment.from_file(
             os.path.join(AUDIO_DIR, ambient_path)
         ).apply_gain(-25)
@@ -120,7 +127,7 @@ def main(
 # Example usage
 if __name__ == "__main__":
     main(
-        run_id="example_run",
+        run_id="20241028_141942",
         intro_path="helper/Ready for the Show.mp3",
         outro_path="helper/Ready for the Show.mp3",
         output_file_name=f"episode.mp3",

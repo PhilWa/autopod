@@ -60,3 +60,8 @@ This will:
 
 Adjust model parameters and speaker configurations in `config.py`.
 
+
+## Example
+```bash
+python main.py --input-file data/input/input.txt --config-file data/config.json
+```
