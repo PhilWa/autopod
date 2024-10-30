@@ -33,12 +33,12 @@ MODELS = {
 
 # Speaker Configuration
 SPEAKERS = {
-    1: {
+    "1": {
         "name": "Elly",
         "voice": "shimmer",
         "personality": "energetic and enthusiastic tech expert with vivid descriptions and expressive delivery",
     },
-    2: {
+    "2": {
         "name": "Tim",
         "voice": "onyx",
         "personality": "analytical and thoughtful thinker that brings a balanced perspective that encourages deeper exploration of topics",

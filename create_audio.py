@@ -145,7 +145,6 @@ def main(script_path=None, output_prefix=None, run_id=None, models=None, speaker
             speaker_history.append(
                 {"role": f"Speaker {line['speaker']}", "content": line["text"]}
             )
-            1 / 0
             audio_files.append(audio_file)
 
         except Exception as e:

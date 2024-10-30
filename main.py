@@ -6,13 +6,6 @@ from create_post import create_linkedin_post, get_latest_articles
 from create_dialogue import create_podcast_script
 from create_audio import main as create_audio
 from create_episode import create_podcast_episode
-from config import (
-    DATA_DIR,
-    AUDIO_DIR,
-    SCRIPT_DIR,
-    POST_DIR,
-    PODCAST_STYLES,
-)
 import argparse
 import json
 
