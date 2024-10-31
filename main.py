@@ -55,6 +55,7 @@ def load_config(config_path=None):
                 config.get("podcast_styles", {}),
                 config.get("prompts", {}),
                 config.get("screenwriter", {}),
+                config.get("briefing", {}),
             )
         except Exception as e:
             print(f"Error loading JSON config: {e}")
@@ -86,6 +87,7 @@ def run_pipeline(input_text_file=None, config_path=None):
             if error:
                 return error
         # Step 2: Create podcast script
+        print("podcast_script")
         create_dialogue(
             main_content=content,
             intro_style=PODCAST_STYLES["intro"],
@@ -99,6 +101,7 @@ def run_pipeline(input_text_file=None, config_path=None):
                 "screenwriter": SCREENWRITER,
             },
         )
+        print("podcast_script_done")
 
         # Step 3: Generate audio files
         print(f"\n=== Generating Audio Files ===")

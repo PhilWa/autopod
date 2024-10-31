@@ -3,7 +3,15 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 import datetime
-from config import MODELS, SCRIPT_DIR, POST_DIR, SPEAKERS, PROMPTS
+from config import (
+    MODELS,
+    SCRIPT_DIR,
+    POST_DIR,
+    SCREENWRITER,
+    SPEAKERS,
+    PROMPTS,
+    PODCAST_STYLES,
+)
 from utils import get_latest_file
 
 
@@ -16,13 +24,14 @@ def create_dialogue(
     models=None,
     speakers=None,
     prompts=None,
+    screenwriter=None,
 ):
     # Load environment variables
     load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     # Use provided configs or fall back to default
-    if models is None or speakers is None or prompts is None:
-        from config import MODELS, SPEAKERS, PROMPTS
+    if models is None or speakers is None or prompts is None or screenwriter is None:
+        from config import MODELS, SPEAKERS, PROMPTS, SCREENWRITER
 
         # If any parameter is None, use the default from config
         if models is None:
@@ -31,20 +40,32 @@ def create_dialogue(
             speakers = SPEAKERS
         if prompts is None:
             prompts = PROMPTS
+        if screenwriter is None:
+            screenwriter = SCREENWRITER
 
     # Format input so it's perfect to create a podcast script on.
 
     # Format the user prompt with dynamic content
+    print("user_prompt")
+    # here issue
+    print(intro_style)
+    print(content_style)
+    print(outro_style)
+    print(main_content)
+    print(speakers["1"]["name"])
+    print(speakers["2"]["name"])
+    print("🥳🥳🥳", prompts["script"]["user"])
     user_prompt = prompts["script"]["user"].format(
-        intro=intro_style,
-        content=content_style,
-        outro=outro_style,
+        intro_style=intro_style,
+        content_style=content_style,
+        outro_style=outro_style,
         main_content=main_content,
         speaker1_name=speakers["1"]["name"],
         speaker2_name=speakers["2"]["name"],
     )
+    print("😎😎😎", user_prompt)
     system_prompt = prompts["script"]["system"]
-
+    print("system_prompt")
     # Generate the script
     response = client.chat.completions.create(
         model=models["podcast_script"]["model"],
@@ -61,10 +82,11 @@ def create_dialogue(
 
     print("Lets turn it up a notch!")
     # Add screenwriter transformation
-    screenwriter_prompt = prompts["screenwriter"]["system"].format(
+    print("screenwriter_prompt", SCREENWRITER["screenwriter"]["system"])
+    screenwriter_prompt = SCREENWRITER["screenwriter"]["system"].format(
         speaker_1=speakers["1"]["personality"], speaker_2=speakers["2"]["personality"]
     )
-
+    print("screenwriter_prompt")
     # Call the API again for the screenwriter transformation
     script = "The script to make a worldclass podcast out of: " + script
     screenwriter_response = client.chat.completions.create(
@@ -76,10 +98,11 @@ def create_dialogue(
         temperature=models["podcast_script"]["temperature"],
         max_tokens=models["podcast_script"]["max_tokens"],
     )
+    print("screenwriter_response")
 
     # Get the transformed script
     final_script = screenwriter_response.choices[0].message.content
-
+    print("final_script")
     # Handle file saving with new parameters
     if output_file:
         filepath = os.path.join(SCRIPT_DIR, output_file)

@@ -65,3 +65,7 @@ Adjust model parameters and speaker configurations in `config.py`.
 ```bash
 python main.py --input-file data/input/input.txt --config-file data/config.json
 ```
+
+```bash
+python distill_content.py data/input/options.pdf --output data/input/options.txt   
+```
