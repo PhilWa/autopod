@@ -9,9 +9,9 @@ from utils import get_latest_file
 
 def create_podcast_script(
     main_content,
-    intro_style="joyful and full of banter",
-    content_style="professional",
-    outro_style="relaxed and engaging",
+    intro_style=None,
+    content_style=None,
+    outro_style=None,
     output_file=None,
     models=None,
     speakers=None,
@@ -20,7 +20,7 @@ def create_podcast_script(
     # Load environment variables
     load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
+    print(f"\n=== Models: {models} ===")
     # Use provided configs or fall back to default
     if models is None or speakers is None or prompts is None:
         from config import MODELS, SPEAKERS, PROMPTS
@@ -32,18 +32,21 @@ def create_podcast_script(
             speakers = SPEAKERS
         if prompts is None:
             prompts = PROMPTS
-
     print(f"\n=== Intro Style: {intro_style} ===")
 
     # Format the user prompt with dynamic content
+    ## Here we have a fail
+    print(f"\n=== User Prompt: {prompts['script']['user']} ===")
+    print("🤖🤖🤖")
     user_prompt = prompts["script"]["user"].format(
-        intro_style=intro_style,
-        content_style=content_style,
-        outro_style=outro_style,
+        intro=intro_style,
+        content=content_style,
+        outro=outro_style,
         main_content=main_content,
         speaker1_name=speakers["1"]["name"],
         speaker2_name=speakers["2"]["name"],
     )
+    print("🤖🤖🤖")
     system_prompt = prompts["script"]["system"]
     print(f"\n=== User Prompt: {user_prompt} ===")
 

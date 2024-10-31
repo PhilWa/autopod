@@ -82,7 +82,6 @@ def run_pipeline(input_text_file=None, config_path=None):
             content, error = process_articles(run_id, models=MODELS)
             if error:
                 return error
-
         # Step 2: Create podcast script
         create_podcast_script(
             main_content=content,
