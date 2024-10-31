@@ -3,7 +3,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from get_information import get_recent_articles
 from create_post import create_linkedin_post, get_latest_articles
-from create_dialogue import create_podcast_script
+from create_dialogue import create_dialogue
 from create_audio import main as create_audio
 from create_episode import (
     load_audio,
@@ -54,15 +54,16 @@ def load_config(config_path=None):
                 config.get("speakers", {}),
                 config.get("podcast_styles", {}),
                 config.get("prompts", {}),
+                config.get("screenwriter", {}),
             )
         except Exception as e:
             print(f"Error loading JSON config: {e}")
             print("Falling back to Python config...")
 
     # Fall back to Python config
-    from config import MODELS, SPEAKERS, PODCAST_STYLES, PROMPTS
+    from config import MODELS, SPEAKERS, PODCAST_STYLES, PROMPTS, SCREENWRITER
 
-    return MODELS, SPEAKERS, PODCAST_STYLES, PROMPTS
+    return MODELS, SPEAKERS, PODCAST_STYLES, PROMPTS, SCREENWRITER
 
 
 def run_pipeline(input_text_file=None, config_path=None):
@@ -72,7 +73,9 @@ def run_pipeline(input_text_file=None, config_path=None):
         print(f"\n=== Starting Pipeline Run: {run_id} ===")
 
         # Load configuration
-        MODELS, SPEAKERS, PODCAST_STYLES, PROMPTS = load_config(config_path)
+        MODELS, SPEAKERS, PODCAST_STYLES, PROMPTS, SCREENWRITER = load_config(
+            config_path
+        )
 
         # Determine content source
         if input_text_file:
@@ -83,7 +86,7 @@ def run_pipeline(input_text_file=None, config_path=None):
             if error:
                 return error
         # Step 2: Create podcast script
-        create_podcast_script(
+        create_dialogue(
             main_content=content,
             intro_style=PODCAST_STYLES["intro"],
             content_style=PODCAST_STYLES["content"],
@@ -91,7 +94,10 @@ def run_pipeline(input_text_file=None, config_path=None):
             output_file=f"podcast_script_{run_id}.txt",
             models=MODELS,
             speakers=SPEAKERS,
-            prompts=PROMPTS,
+            prompts={
+                **PROMPTS,
+                "screenwriter": SCREENWRITER,
+            },
         )
 
         # Step 3: Generate audio files

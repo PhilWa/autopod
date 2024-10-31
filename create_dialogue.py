@@ -7,7 +7,7 @@ from config import MODELS, SCRIPT_DIR, POST_DIR, SPEAKERS, PROMPTS
 from utils import get_latest_file
 
 
-def create_podcast_script(
+def create_dialogue(
     main_content,
     intro_style=None,
     content_style=None,
@@ -20,7 +20,6 @@ def create_podcast_script(
     # Load environment variables
     load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    print(f"\n=== Models: {models} ===")
     # Use provided configs or fall back to default
     if models is None or speakers is None or prompts is None:
         from config import MODELS, SPEAKERS, PROMPTS
@@ -32,12 +31,10 @@ def create_podcast_script(
             speakers = SPEAKERS
         if prompts is None:
             prompts = PROMPTS
-    print(f"\n=== Intro Style: {intro_style} ===")
+
+    # Format input so it's perfect to create a podcast script on.
 
     # Format the user prompt with dynamic content
-    ## Here we have a fail
-    print(f"\n=== User Prompt: {prompts['script']['user']} ===")
-    print("🤖🤖🤖")
     user_prompt = prompts["script"]["user"].format(
         intro=intro_style,
         content=content_style,
@@ -46,14 +43,9 @@ def create_podcast_script(
         speaker1_name=speakers["1"]["name"],
         speaker2_name=speakers["2"]["name"],
     )
-    print("🤖🤖🤖")
     system_prompt = prompts["script"]["system"]
-    print(f"\n=== User Prompt: {user_prompt} ===")
-
-    # Create the system prompt
 
     # Generate the script
-    print(f"\n=== System Prompt: {system_prompt} ===")
     response = client.chat.completions.create(
         model=models["podcast_script"]["model"],
         messages=[
@@ -67,17 +59,37 @@ def create_podcast_script(
     # Get the generated script
     script = response.choices[0].message.content
 
+    print("Lets turn it up a notch!")
+    # Add screenwriter transformation
+    screenwriter_prompt = prompts["screenwriter"]["system"].format(
+        speaker_1=speakers["1"]["personality"], speaker_2=speakers["2"]["personality"]
+    )
+
+    # Call the API again for the screenwriter transformation
+    script = "The script to make a worldclass podcast out of: " + script
+    screenwriter_response = client.chat.completions.create(
+        model=models["podcast_script"]["model"],
+        messages=[
+            {"role": "system", "content": screenwriter_prompt},
+            {"role": "user", "content": script},
+        ],
+        temperature=models["podcast_script"]["temperature"],
+        max_tokens=models["podcast_script"]["max_tokens"],
+    )
+
+    # Get the transformed script
+    final_script = screenwriter_response.choices[0].message.content
+
     # Handle file saving with new parameters
     if output_file:
         filepath = os.path.join(SCRIPT_DIR, output_file)
     else:
-        # Fallback to timestamp if no output_file provided
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         filepath = os.path.join(SCRIPT_DIR, f"podcast_script_{timestamp}.txt")
 
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     with open(filepath, "w", encoding="utf-8") as f:
-        f.write(script)
+        f.write(final_script)
 
     return filepath
 
@@ -93,7 +105,7 @@ def main():
     else:
         raise ValueError("No recent posts found in the post directory.")
 
-    filepath = create_podcast_script(
+    filepath = create_dialogue(
         main_content=main_content,
         intro_style=MODELS["podcast_script"]["intro_style"],
         content_style=MODELS["podcast_script"]["content_style"],

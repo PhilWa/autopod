@@ -15,31 +15,41 @@ def read_podcast_script(filepath):
 
 
 def parse_script(content):
-    # Split the content into lines and process each line
-    lines = content.strip().split("\n")
-    parsed_lines = []
+    """Parse the screenplay format script"""
+    try:
+        # Evaluate the string as a Python list of tuples
+        script_data = eval(content)
+        parsed_lines = []
 
-    for line in lines:
-        # Skip empty lines
-        if not line.strip():
-            continue
+        for speaker_tuple in script_data:
+            if len(speaker_tuple) == 3:  # ("Speaker X", "text", "expression")
+                speaker, text, voice_expression = speaker_tuple
+                # Extract speaker number from "Speaker X"
+                speaker_num = speaker.split()[1]
+                parsed_lines.append(
+                    {
+                        "speaker": speaker_num,
+                        "text": text.strip(),
+                        "voice_expression": voice_expression.strip(),
+                    }
+                )
 
-        # Look for speaker pattern with square brackets
-        match = re.match(r"<Speaker (\d)> \[(.*)\]", line.strip())
-        if match:
-            speaker_num, text = match.groups()
-            parsed_lines.append(
-                {
-                    "speaker": int(speaker_num),
-                    "text": text.strip(),  # This will remove the square brackets
-                }
-            )
-
-    return parsed_lines
+        return parsed_lines
+    except Exception as e:
+        print(f"Error parsing script: {e}")
+        return []
 
 
 def generate_audio(
-    client, text, speaker_history, speaker_info, voice, file_prefix, index, models=None
+    client,
+    text,
+    speaker_history,
+    speaker_info,
+    voice,
+    file_prefix,
+    index,
+    voice_expression,
+    models=None,
 ):
     # Use provided models config or fall back to default
     models = models or MODELS
@@ -49,18 +59,16 @@ def generate_audio(
     print(f"Speaker: {speaker_info['name']}")
     print(f"Voice: {voice}")
     print(f"Personality: {speaker_info['personality']}")
-    print(f"Text to process: {text[:100]}...")  # Show first 100 chars
+    print(f"Voice Expression: {voice_expression}")
+    print(f"Text to process: {text[:100]}...")
 
-    # Show conversation history
     recent_history = (
         speaker_history[-2:] if len(speaker_history) >= 2 else speaker_history
     )
     history_text = " ".join(
         [f"{msg['role']}: {msg['content']}" for msg in recent_history]
     )
-    print(f"History text: {history_text}")
-    print(f"Text: {text}")
-    text = f"Say the following text in the appropriate voice given the previous conversation: {text}"
+    text = f"Say exactly the following text in the appropriate voice given the previous conversation and what you have learned from the voice coaching. *Text to say:* {text}"
     try:
         completion = client.chat.completions.create(
             model=models["podcast_audio"]["model"],
@@ -69,7 +77,7 @@ def generate_audio(
             messages=[
                 {
                     "role": "system",
-                    "content": f"You are {speaker_info['name']}, {speaker_info['personality']}. Previous conversation: {history_text}",
+                    "content": f"You are {speaker_info['name']}, {speaker_info['personality']}. Previous conversation: {history_text}. This is how you say it based on voice coaching: {voice_expression}",
                 },
                 {"role": "user", "content": text},
             ],
@@ -94,13 +102,10 @@ def main(script_path=None, output_prefix=None, run_id=None, models=None, speaker
     load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    # Use provided config or fall back to default
     models = models or MODELS
     speakers = speakers or SPEAKERS
-    print(f"🔍 speakers: {speakers}")
+
     print("\n=== Starting Script Processing ===")
-    # Step 1: Process the script
-    script_path = "podcast_script_20241029_214055.txt"
     if script_path:
         print(f"Using provided script path: {script_path}")
         script_path = os.path.join(SCRIPT_DIR, script_path)
@@ -111,27 +116,21 @@ def main(script_path=None, output_prefix=None, run_id=None, models=None, speaker
 
     # Parse the script
     parsed_lines = parse_script(content)
+    if not parsed_lines:
+        print("Failed to parse script")
+        return []
 
-    # Keep track of conversation history
     speaker_history = deque(maxlen=5)
-
-    # Use run_id for timestamp if provided
     timestamp = run_id or datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Step 2: Generate audio for each line
     audio_files = []
     for i, line in enumerate(parsed_lines):
         print(f"\nProcessing line {i+1} of {len(parsed_lines)}")
-        speaker_num = str(line["speaker"])
-        print(f"🔍 speaker_num: {speaker_num}")
-        # This line does not work.
+        speaker_num = line["speaker"]
         voice = speakers[speaker_num]["voice"]
-        print(f"🔍 voice: {voice}")
+
         try:
-            print(f"🔍 about to generate audio")
-            # Use output_prefix if provided, otherwise use timestamp
             file_prefix = output_prefix or f"audio_{timestamp}"
-            print(line["text"])
             audio_file = generate_audio(
                 client,
                 line["text"],
@@ -140,10 +139,11 @@ def main(script_path=None, output_prefix=None, run_id=None, models=None, speaker
                 voice,
                 file_prefix,
                 i,
+                line["voice_expression"],  # Pass the voice expression to generate_audio
                 models=models,
             )
             speaker_history.append(
-                {"role": f"Speaker {line['speaker']}", "content": line["text"]}
+                {"role": f"Speaker {speaker_num}", "content": line["text"]}
             )
             audio_files.append(audio_file)
 
