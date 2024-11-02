@@ -1,12 +1,18 @@
 import base64
 from openai import OpenAI
 from dotenv import load_dotenv
-import re
 import os
 from collections import deque
 import datetime
-from config import AUDIO_DIR, SCRIPT_DIR, SPEAKERS, MODELS
 from utils import get_latest_file
+
+from config_parser import (
+    load_config,
+    get_models,
+    get_speakers,
+    get_directories,
+    format_audio_generation_prompt,
+)
 
 
 def read_podcast_script(filepath):
@@ -22,8 +28,8 @@ def parse_script(content):
         parsed_lines = []
 
         for speaker_tuple in script_data:
-            if len(speaker_tuple) == 3:  # ("Speaker X", "text", "expression")
-                speaker, text, voice_expression = speaker_tuple
+            if len(speaker_tuple) >= 3:  # ("Speaker X", "text", "expression")
+                speaker, text, voice_expression = speaker_tuple[:3]
                 # Extract speaker number from "Speaker X"
                 speaker_num = speaker.split()[1]
                 parsed_lines.append(
@@ -49,42 +55,34 @@ def generate_audio(
     file_prefix,
     index,
     voice_expression,
-    models=None,
+    config,
 ):
-    # Use provided models config or fall back to default
-    models = models or MODELS
+    models = get_models(config)
 
-    # Print debugging information
-    print(f"\n=== Generating Audio for Part {index} ===")
-    print(f"Speaker: {speaker_info['name']}")
-    print(f"Voice: {voice}")
-    print(f"Personality: {speaker_info['personality']}")
-    print(f"Voice Expression: {voice_expression}")
-    print(f"Text to process: {text[:100]}...")
-
+    # Get the last two messages from history
     recent_history = (
         speaker_history[-2:] if len(speaker_history) >= 2 else speaker_history
     )
-    history_text = " ".join(
-        [f"{msg['role']}: {msg['content']}" for msg in recent_history]
+
+    # Format the messages using config_parser
+    messages = format_audio_generation_prompt(
+        config,
+        speaker_info,
+        voice_expression,
+        recent_history,
+        text,
     )
-    text = f"Say exactly the following text in the appropriate voice given the previous conversation and what you have learned from the voice coaching. *Text to say:* {text}"
+
     try:
         completion = client.chat.completions.create(
             model=models["podcast_audio"]["model"],
             modalities=models["podcast_audio"]["modalities"],
             audio={"voice": voice, "format": models["podcast_audio"]["format"]},
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"You are {speaker_info['name']}, {speaker_info['personality']}. Previous conversation: {history_text}. This is how you say it based on voice coaching: {voice_expression}",
-                },
-                {"role": "user", "content": text},
-            ],
+            messages=messages,
         )
 
         wav_bytes = base64.b64decode(completion.choices[0].message.audio.data)
-        filename = os.path.join(AUDIO_DIR, f"{file_prefix}_part_{index}.wav")
+        filename = os.path.join(file_prefix + f"_part_{index+1}.wav")
 
         with open(filename, "wb") as f:
             f.write(wav_bytes)
@@ -98,21 +96,32 @@ def generate_audio(
         raise
 
 
-def main(script_path=None, output_prefix=None, run_id=None, models=None, speakers=None):
+def main(
+    script_path=None,
+    output_prefix=None,
+    run_id=None,
+    config=None,
+):
     load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    models = models or MODELS
-    speakers = speakers or SPEAKERS
+    if config is None:
+        raise ValueError("Config must be provided")
+
+    models = get_models(config)
+    speakers = get_speakers(config)
+    directories = get_directories(config)
+    audio_dir = directories.get("audio", "data/audio")
+    script_dir = directories.get("scripts", "data/scripts")
 
     print("\n=== Starting Script Processing ===")
     if script_path:
         print(f"Using provided script path: {script_path}")
-        script_path = os.path.join(SCRIPT_DIR, script_path)
+        script_path = os.path.join(script_dir, script_path)
         content = read_podcast_script(script_path)
     else:
         print("No script path provided, using latest script")
-        script_path, content = get_latest_file(SCRIPT_DIR, ".txt")
+        script_path, content = get_latest_file(script_dir, ".txt")
 
     # Parse the script
     parsed_lines = parse_script(content)
@@ -131,6 +140,7 @@ def main(script_path=None, output_prefix=None, run_id=None, models=None, speaker
 
         try:
             file_prefix = output_prefix or f"audio_{timestamp}"
+            file_prefix = os.path.join(audio_dir, file_prefix)
             audio_file = generate_audio(
                 client,
                 line["text"],
@@ -139,8 +149,8 @@ def main(script_path=None, output_prefix=None, run_id=None, models=None, speaker
                 voice,
                 file_prefix,
                 i,
-                line["voice_expression"],  # Pass the voice expression to generate_audio
-                models=models,
+                line["voice_expression"],
+                config,
             )
             speaker_history.append(
                 {"role": f"Speaker {speaker_num}", "content": line["text"]}
@@ -155,6 +165,7 @@ def main(script_path=None, output_prefix=None, run_id=None, models=None, speaker
 
 
 if __name__ == "__main__":
-    audio_files = main()
+    config = load_config()
+    audio_files = main(config=config)
     for file in audio_files:
         print(file)

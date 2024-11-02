@@ -1,12 +1,16 @@
 import sqlite3
-from openai import OpenAI
 from datetime import datetime
-import os
 from dotenv import load_dotenv
 from get_information import setup_database
-from config import POST_DIR, MODELS
+from openai import OpenAI
+import os
 
-load_dotenv()
+from config_parser import (
+    load_config,
+    get_models,
+    get_directories,
+    format_linkedin_post_prompt,
+)
 
 
 def save_blog_post(post_content, article_ids):
@@ -42,76 +46,47 @@ def get_latest_articles():
     return articles
 
 
-def create_linkedin_post(articles, output_file=None, models=None):
+def create_linkedin_post(article_content, output_file=None, config=None):
+    load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    # Use provided models config or fall back to default
-    models = models or MODELS
+    if config is None:
+        raise ValueError("Config must be provided")
 
-    # Prepare the articles for the prompt
-    articles_text = "\n\n".join(
-        [
-            f"Date: {article[0]}\nTitle: {article[1]}\nContent: {article[2][:500]}..."  # First 500 chars of content
-            for article in articles
-        ]
-    )
+    models = get_models(config)
+    directories = get_directories(config)
+    post_dir = directories["posts"]
 
-    prompt = f"""
-    ### Objective ###
-    Create a LinkedIn or X (Twitter) post highlighting the top three stories of the week, including AI tech and one Swiss biotech story with a financial impact if available. The post should feel professional, engaging, and encourage readers to visit [aroundthecorner.tech](https://aroundthecorner.tech).
-
-    ### Structure ###
-    1. **Intro Sentence**: Open with “👀 Around the corner…” to introduce the stories with a unified theme.
-    2. **Story Details** (repeat for each):
-    - **Headline**: Catchy, non-cringy title with a relevant **emoji**
-    - **Summary**: Brief 2-3 sentence overview
-    - **Hashtags**: Add relevant hashtags to boost visibility
-    3. **Outro**: Close with an invitation to sign up for more stories on [aroundthecorner.tech](https://aroundthecorner.tech).
-
-    ### Requirements ###
-    - **Focus** on innovation, startups, and impactful financial news in AI and Swiss biotech.
-    - **Exclude** job ads and COVID-related info.
-    - **Format** with short paragraphs and clear sections to enhance readability on LinkedIn and X.
-
-    ### Only use information from the following content: ###
-
-    {articles_text}
-
-    """
+    # Prepare messages using config_parser
+    messages = format_linkedin_post_prompt(config, article_content)
 
     response = client.chat.completions.create(
         model=models["linkedin_post"]["model"],
+        messages=messages,
         temperature=models["linkedin_post"]["temperature"],
         max_tokens=models["linkedin_post"]["max_tokens"],
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a professional content creator specializing in switzerland-based innovation, tech, startups, and science.",
-            },
-            {"role": "user", "content": prompt},
-        ],
     )
 
-    post_content = response.choices[0].message.content
+    linkedin_post = response.choices[0].message["content"]
 
-    # Save the post if output_file is provided
+    # Save the post
     if output_file:
-        filepath = os.path.join(POST_DIR, output_file)
+        output_path = os.path.join(post_dir, output_file)
     else:
-        # Fallback to timestamp if no output_file provided
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filepath = os.path.join(POST_DIR, f"linkedin_post_{timestamp}.txt")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = os.path.join(post_dir, f"post_{timestamp}.txt")
 
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write(post_content)
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(linkedin_post)
 
-    return post_content
+    print(f"LinkedIn post saved to {output_path}")
+    return linkedin_post
 
 
 def main():
     try:
-        os.makedirs(POST_DIR, exist_ok=True)
+        config = load_config()
+        os.makedirs(get_directories(config)["posts"], exist_ok=True)
 
         articles = get_latest_articles()
         if not articles:
@@ -120,7 +95,7 @@ def main():
         article_ids = [article[0] for article in articles]
         article_content = [(article[1], article[2], article[3]) for article in articles]
 
-        linkedin_post = create_linkedin_post(article_content)
+        linkedin_post = create_linkedin_post(article_content, config=config)
         save_blog_post(linkedin_post, article_ids)
 
     except Exception as e:

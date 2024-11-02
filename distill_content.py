@@ -5,7 +5,12 @@ import PyPDF2
 from tqdm import tqdm
 from dotenv import load_dotenv
 
-from config import MODELS, PROMPTS, DATA_DIR
+from config_parser import (
+    load_config,
+    get_models,
+    get_directories,
+    format_distillation_prompt,
+)
 
 
 def validate_pdf(file_path: str) -> bool:
@@ -98,20 +103,18 @@ def create_chunks(text: str, chunk_size: int) -> List[str]:
     return chunks
 
 
-def process_chunk(client: OpenAI, chunk: str, chunk_num: int) -> str:
-    """Process a single chunk of text using GPT-3.5-turbo."""
+def process_chunk(client: OpenAI, chunk: str, chunk_num: int, config) -> str:
+    """Process a single chunk of text."""
+    models = get_models(config)
+
+    messages = format_distillation_prompt(config, chunk)
+
     try:
         response = client.chat.completions.create(
-            model=MODELS["content_distillation"]["model"],
-            messages=[
-                {"role": "system", "content": PROMPTS["distillation"]["system"]},
-                {
-                    "role": "user",
-                    "content": PROMPTS["distillation"]["user"].format(text=chunk),
-                },
-            ],
-            temperature=MODELS["content_distillation"]["temperature"],
-            max_tokens=MODELS["content_distillation"]["max_tokens"],
+            model=models["content_distillation"]["model"],
+            messages=messages,
+            temperature=models["content_distillation"]["temperature"],
+            max_tokens=models["content_distillation"]["max_tokens"],
         )
 
         processed_text = response.choices[0].message.content.strip()
@@ -134,6 +137,11 @@ def main(pdf_path: str, output_file: Optional[str] = None) -> Optional[str]:
     load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+    # Load configuration
+    config = load_config()
+    models = get_models(config)
+    data_dir = get_directories(config)["data"]
+
     # Extract metadata
     print("Extracting metadata...")
     metadata = get_pdf_metadata(pdf_path)
@@ -151,12 +159,12 @@ def main(pdf_path: str, output_file: Optional[str] = None) -> Optional[str]:
         return None
 
     # Process text in chunks
-    chunks = create_chunks(extracted_text, MODELS["content_distillation"]["chunk_size"])
+    chunks = create_chunks(extracted_text, models["content_distillation"]["chunk_size"])
     processed_chunks = []
 
     print(f"\nProcessing {len(chunks)} chunks...")
     for i, chunk in enumerate(tqdm(chunks, desc="Processing chunks")):
-        processed_chunk = process_chunk(client, chunk, i + 1)
+        processed_chunk = process_chunk(client, chunk, i + 1, config)
         processed_chunks.append(processed_chunk)
 
     # Combine processed chunks
@@ -164,7 +172,7 @@ def main(pdf_path: str, output_file: Optional[str] = None) -> Optional[str]:
 
     # Save to file
     if output_file is None:
-        output_file = os.path.join(DATA_DIR, "processed_content.txt")
+        output_file = os.path.join(data_dir, "processed_content.txt")
 
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     with open(output_file, "w", encoding="utf-8") as f:

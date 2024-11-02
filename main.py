@@ -1,6 +1,18 @@
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+import argparse
+
+from config_parser import (
+    load_config,
+    get_models,
+    get_speakers,
+    get_podcast_styles,
+    get_prompts,
+    get_screenwriter,
+    get_directories,
+)
+
 from get_information import get_recent_articles
 from create_post import create_linkedin_post, get_latest_articles
 from create_dialogue import create_dialogue
@@ -12,8 +24,6 @@ from create_episode import (
     add_intro_outro,
     save_audio,
 )
-import argparse
-import json
 
 
 def generate_run_id():
@@ -21,7 +31,7 @@ def generate_run_id():
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
-def process_articles(run_id=None, models=None):
+def process_articles(run_id=None, config=None):
     """Fetch articles and create a LinkedIn post"""
     get_recent_articles()
     articles = get_latest_articles()
@@ -31,7 +41,7 @@ def process_articles(run_id=None, models=None):
     print(f"\n=== Creating LinkedIn Post ===")
     article_content = [(article[1], article[2], article[3]) for article in articles]
     linkedin_post = create_linkedin_post(
-        article_content, output_file=f"post_{run_id}.txt", models=models
+        article_content, output_file=f"post_{run_id}.txt", config=config
     )
     return linkedin_post, None
 
@@ -43,30 +53,6 @@ def process_text_file(input_text_file):
         return file.read()
 
 
-def load_config(config_path=None):
-    """Load configuration from either JSON file or default Python config"""
-    if config_path and config_path.endswith(".json"):
-        try:
-            with open(config_path, "r") as f:
-                config = json.load(f)
-            return (
-                config.get("models", {}),
-                config.get("speakers", {}),
-                config.get("podcast_styles", {}),
-                config.get("prompts", {}),
-                config.get("screenwriter", {}),
-                config.get("briefing", {}),
-            )
-        except Exception as e:
-            print(f"Error loading JSON config: {e}")
-            print("Falling back to Python config...")
-
-    # Fall back to Python config
-    from config import MODELS, SPEAKERS, PODCAST_STYLES, PROMPTS, SCREENWRITER
-
-    return MODELS, SPEAKERS, PODCAST_STYLES, PROMPTS, SCREENWRITER
-
-
 def run_pipeline(input_text_file=None, config_path=None):
     """Run the complete content generation pipeline"""
     try:
@@ -74,32 +60,29 @@ def run_pipeline(input_text_file=None, config_path=None):
         print(f"\n=== Starting Pipeline Run: {run_id} ===")
 
         # Load configuration
-        MODELS, SPEAKERS, PODCAST_STYLES, PROMPTS, SCREENWRITER = load_config(
-            config_path
-        )
+        print(f"Loading config from: {config_path or 'based_config.json'}")
+        config = load_config(config_path)
+        directories = get_directories(config)
+
+        # Create directories from config
+        for dir_path in directories.values():
+            if dir_path:  # Only create if path is not None/empty
+                os.makedirs(dir_path, exist_ok=True)
 
         # Determine content source
         if input_text_file:
             content = process_text_file(input_text_file)
             print(f"\n=== Content: {content[:100]} ===")
         else:
-            content, error = process_articles(run_id, models=MODELS)
+            content, error = process_articles(run_id, config=config)
             if error:
                 return error
+
         # Step 2: Create podcast script
-        print("podcast_script")
         create_dialogue(
             main_content=content,
-            intro_style=PODCAST_STYLES["intro"],
-            content_style=PODCAST_STYLES["content"],
-            outro_style=PODCAST_STYLES["outro"],
             output_file=f"podcast_script_{run_id}.txt",
-            models=MODELS,
-            speakers=SPEAKERS,
-            prompts={
-                **PROMPTS,
-                "screenwriter": SCREENWRITER,
-            },
+            config=config,  # Pass the whole config
         )
         print("podcast_script_done")
 
@@ -109,15 +92,14 @@ def run_pipeline(input_text_file=None, config_path=None):
             script_path=f"podcast_script_{run_id}.txt",
             output_prefix=f"audio_{run_id}",
             run_id=run_id,
-            models=MODELS,
-            speakers=SPEAKERS,
+            config=config,  # Pass the whole config
         )
         if not audio_files:
             return "Failed to generate audio files"
 
         # Step 4: Create final podcast episode
         print(f"\n=== Creating Final Podcast Episode ===")
-        segments = load_audio(run_id=run_id)
+        segments = load_audio(run_id=run_id, config=config)
         combined_audio = stitch_audio(segments)
         processed_audio = apply_postprocessing(combined_audio)
         final_audio = add_intro_outro(
@@ -131,10 +113,8 @@ def run_pipeline(input_text_file=None, config_path=None):
             fade_duration=2000,
         )
         output_filename = f"episode_{run_id}.mp3"
-        save_audio(final_audio, output_filename, run_id=run_id)
-        episode_path = os.path.join(
-            "episodes", run_id, output_filename
-        )  # Adjust path as needed
+        save_audio(final_audio, output_filename, run_id=run_id, config=config)
+        episode_path = os.path.join(directories["episodes"], run_id, output_filename)
 
         return {
             "status": "success",
@@ -160,7 +140,7 @@ def main():
     parser.add_argument(
         "--config-file",
         type=str,
-        help="Path to JSON configuration file. If not provided, uses Python config.",
+        help="Path to JSON configuration file. If not provided, uses base config.",
     )
     args = parser.parse_args()
 

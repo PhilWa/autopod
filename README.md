@@ -54,12 +54,11 @@ This will:
   - `audio/` - Generated audio segments
   - `posts/` - LinkedIn posts
   - `scripts/` - Podcast scripts
-  - `pod/` - Final podcast episodes
+  - `episodes/` - Final podcast episodes
 
 ## Configuration
 
-Adjust model parameters and speaker configurations in `config.py`.
-
+Adjust model parameters and speaker configurations in `based_config.json`.
 
 ## Example
 ```bash
@@ -67,5 +66,5 @@ python main.py --input-file data/input/input.txt --config-file data/config.json
 ```
 
 ```bash
-python distill_content.py data/input/options.pdf --output data/input/options.txt   
+python distill_content.py data/input/options.pdf --output data/input/options.txt
 ```
